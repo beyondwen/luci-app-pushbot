@@ -1,0 +1,29 @@
+{
+    "_api": "这是Gotify推送 post 模板信息 api 文件",
+    "_api": "【Gotify推送】",
+    
+    "url": "${gotify_url}/message?token=${gotify_token}",
+    "data": "@${tempjsonpath}",
+    "content_type": "Content-Type: application/json; charset=utf-8",
+    "str_title_start": "【",
+    "str_title_end": "】",
+    "str_linefeed": "\\n",
+    "str_splitline": "\\n\\n",
+    "str_space": " ",
+    "str_tab": " ",
+    "table_tab": "",
+    "font_green": "",
+    "font_green2": "",
+    "font_red": "",
+    "font_blue": "",
+    "font_purple": "",
+    "font_end": "",
+    "font_end2": "",
+    "percentsym": "",
+    "boldstar": "",
+    "type": {
+        "title": "\"${1}\"",
+        "message": "\"${nowtime}${str_linefeed}${2}\"",
+        "priority": 5
+    }
+}

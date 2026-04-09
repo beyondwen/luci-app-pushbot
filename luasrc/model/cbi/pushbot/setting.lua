@@ -47,6 +47,7 @@ a:value("/usr/bin/pushbot/api/feishu.json",translate("飞书"))
 a:value("/usr/bin/pushbot/api/bark.json",translate("Bark"))
 a:value("/usr/bin/pushbot/api/pushplus.json",translate("PushPlus"))
 a:value("/usr/bin/pushbot/api/pushdeer.json",translate("PushDeer"))
+a:value("/usr/bin/pushbot/api/gotify.json",translate("Gotify"))
 a:value("/usr/bin/pushbot/api/diy.json",translate("自定义推送"))
 
 a=s:taboption("basic", Value,"dd_webhook",translate('Webhook'), translate("钉钉机器人 Webhook").."，只输入access_token=后面的即可<br>调用代码获取<a href='https://developers.dingtalk.com/document/robots/custom-robot-access' target='_blank'>点击这里</a><br><br>")
@@ -134,6 +135,14 @@ a=s:taboption("basic", Value,"bark_level",translate('Bark Level'), translate("Ba
 a.rmempty = true
 a.default = "active"
 a:depends("jsonpath","/usr/bin/pushbot/api/bark.json")
+
+a=s:taboption("basic", Value,"gotify_url",translate('Gotify URL'), translate("Gotify 服务器地址").."<br>如http://your.domain:port<br><br>")
+a.rmempty = true
+a:depends("jsonpath","/usr/bin/pushbot/api/gotify.json")
+
+a=s:taboption("basic", Value,"gotify_token",translate('Gotify Token'), translate("Gotify Token").."<br><br>")
+a.rmempty = true
+a:depends("jsonpath","/usr/bin/pushbot/api/gotify.json")
 
 a=s:taboption("basic", TextValue, "diy_json", translate("自定义推送"))
 a.optional = false
