@@ -3,23 +3,32 @@
     "_api": "【Gotify推送】",
     
     "url": "\"${gotify_url}/message?token=${gotify_token}\"",
-    "data": "\"title=${1}&message=${nowtime}${str_linefeed}${2}&priority=5\"",
-    "content_type": "Content-Type: application/x-www-form-urlencoded",
-    "str_title_start": "#### ",
+    "data": "@${tempjsonpath}",
+    "content_type": "Content-Type: application/json",
+    "str_title_start": "### ",
     "str_title_end": "",
-    "str_linefeed": "%0D%0A%0D%0A",
-    "str_splitline": "%0D%0A%0D%0A----%0D%0A%0D%0A",
+    "str_linefeed": "\\n",
+    "str_splitline": "\\n\\n---\\n\\n",
     "str_space": " ",
-    "str_tab": "    ",
+    "str_tab": "- ",
     "table_tab": "",
-    "font_green": "",
-    "font_green2": "",
-    "font_red": "",
-    "font_blue": "",
-    "font_purple": "",
+    "font_green": "🟢 ",
+    "font_green2": "`",
+    "font_red": "🔴 ",
+    "font_blue": "🔵 ",
+    "font_purple": "🟣 ",
     "font_end": "",
-    "font_end2": "",
+    "font_end2": "`",
     "percentsym": "",
-    "boldstar": "",
-    "type": {}
+    "boldstar": "**",
+    "type": {
+        "title": "\"${1}\"",
+        "message": "\"## ${font_purple}${1}${font_end}\\n\\n> 时间：${nowtime}${2}\"",
+        "priority": 5,
+        "extras": {
+            "client::display": {
+                "contentType": "\"text/markdown\""
+            }
+        }
+    }
 }
