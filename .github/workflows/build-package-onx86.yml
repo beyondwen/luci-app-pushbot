@@ -44,7 +44,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@main
+      uses: actions/checkout@v4
 
     - name: Initialization environment
       env:
@@ -52,7 +52,8 @@ jobs:
       run: |
         sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
         sudo -E apt-get -qq update
-        sudo -E apt-get -qq install $(curl -fsSL git.io/depends-ubuntu-2004)
+        # 修复废弃的 git.io 链接，替换为原始的 Github RAW 链接
+        sudo -E apt-get -qq install $(curl -fsSL https://github.com/P3TERX/Actions-OpenWrt/raw/main/depends-ubuntu-2004)
         sudo -E apt-get -qq autoremove --purge
         sudo -E apt-get -qq clean
         sudo timedatectl set-timezone "$TZ"
@@ -81,7 +82,6 @@ jobs:
         make defconfig
         echo "CONFIG_PACKAGE_$PackageName=y" >> ./.config
 
-
     - name: SSH connection to Actions
       uses: P3TERX/ssh2actions@v1.0.0
       if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
@@ -99,11 +99,11 @@ jobs:
         nowtime=`date "+%Y-%m-%d %H:%M:%S"`
         eval "$send_dingding \"${send_content0}\",\"text\":\"${nowtime} $markdown_splitline #### <font color=#6A65FF>${send_content0}</font>\n\n[点此链接查看](${GITHUB_WORKFLOW_URL})\"}}'"
         
-      
         cd openwrt
         echo -e "$(nproc) thread compile"
         make package/$PackageName/compile V=s
-        echo "::set-output name=status::success"
+        # 修复：替换废弃的 set-output 语法
+        echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Check space usage
       if: (!cancelled())
@@ -115,32 +115,38 @@ jobs:
       run: |
         cd openwrt/bin/packages/*/base
         echo "PackagePath=$PWD" >> $GITHUB_ENV
-        echo "::set-output name=status::success"
+        # 修复：替换废弃的 set-output 语法
+        echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload package
-      uses: actions/upload-artifact@main
+      uses: actions/upload-artifact@v4
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: ${{ env.upload_file }}
+        # 修复：v4 版本的 artifact name 不允许包含 * 等特殊符号，改为直接使用 PackageName
+        name: ${{ env.PackageName }}
         path: ${{ env.PackagePath }}
 
     - name: Upload package to cowtransfer
       id: cowtransfer
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_COWTRANSFER == 'true' && !cancelled()
       run: |
-        curl -fsSL git.io/file-transfer | sh
+        # 修复：替换废弃的 git.io 链接
+        curl -fsSL https://raw.githubusercontent.com/Mikubill/transfer/master/install.sh | sh
         ./transfer cow --block 2621440 -s -p 64 --no-progress ${PackagePath}/${upload_file} 2>&1 | tee cowtransfer.log
         echo "::warning file=cowtransfer.com::$(cat cowtransfer.log | grep https)"
-        echo "::set-output name=url::$(cat cowtransfer.log | grep https | cut -f3 -d" ")"
+        # 修复：替换废弃的 set-output 语法
+        echo "url=$(cat cowtransfer.log | grep https | cut -f3 -d' ')" >> $GITHUB_OUTPUT
 
     - name: Upload firmware to WeTransfer
       id: wetransfer
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_WETRANSFER == 'true' && !cancelled()
       run: |
-        curl -fsSL git.io/file-transfer | sh
+        # 修复：替换废弃的 git.io 链接
+        curl -fsSL https://raw.githubusercontent.com/Mikubill/transfer/master/install.sh | sh
         ./transfer wet -s -p 16 --no-progress ${PackagePath}/${upload_file} 2>&1 | tee wetransfer.log
         echo "::warning file=wetransfer.com::$(cat wetransfer.log | grep https)"
-        echo "::set-output name=url::$(cat wetransfer.log | grep https | cut -f3 -d" ")"
+        # 修复：替换废弃的 set-output 语法
+        echo "url=$(cat wetransfer.log | grep https | cut -f3 -d' ')" >> $GITHUB_OUTPUT
         
     - name: Upload firmware to my NAS
       id: zz-nas
@@ -156,7 +162,8 @@ jobs:
         
         cd openwrt/bin/packages/*/base
         echo $ftp_psw > /tmp/rsync.psw && chmod 600 /tmp/rsync.psw
-        rsync -avrzP $upload_file_1 $ftp_username@$ftp_ip::$TargetPath/$(date +"%Y.%m.%d-%H%M")/ --password-file=/tmp/rsync.psw
+        # 修复：致命错误 - 将不存在的 $upload_file_1 修改为 $upload_file
+        rsync -avrzP $upload_file $ftp_username@$ftp_ip::$TargetPath/$(date +"%Y.%m.%d-%H%M")/ --password-file=/tmp/rsync.psw
         echo "::warning file=zz-nas.com::All Released Files Uploaded to ZZ-NAS"
         
         nowtime=`date "+%Y-%m-%d %H:%M:%S"`
@@ -166,14 +173,15 @@ jobs:
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        echo "::set-output name=release_tag::$(date +"%Y.%m.%d-%H%M")"
+        # 修复：替换废弃的 set-output 语法
+        echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
         touch release.txt
         [ $UPLOAD_COWTRANSFER = true ] && echo "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
         [ $UPLOAD_WETRANSFER = true ] && echo "🔗 [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
-        echo "::set-output name=status::success"
+        echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload package to release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       if: steps.tag.outputs.status == 'success' && !cancelled()
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -183,7 +191,10 @@ jobs:
         files: ${{ env.PackagePath }}/${{ env.upload_file }}
 
     - name: Delete workflow runs
-      uses: GitRML/delete-workflow-runs@main
+      # 修复：替换为现代版并且持续维护的删除工具
+      uses: Mattraks/delete-workflow-runs@v2
       with:
+        token: ${{ github.token }}
+        repository: ${{ github.repository }}
         retain_days: 1
         keep_minimum_runs: 3
