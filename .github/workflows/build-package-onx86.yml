@@ -18,11 +18,10 @@ on:
         description: 'SSH connection to Actions'
         required: false
         default: 'false'
-#  schedule:
-#    - cron: 10 14 * * 5
 
 env:
-  SDK_URL: https://downloads.openwrt.org/releases/22.03.0-rc5/targets/x86/64/openwrt-sdk-22.03.0-rc5-x86-64_gcc-11.2.0_musl.Linux-x86_64.tar.xz
+  # 更换为最新的 OpenWrt 24.10.5 的 SDK，注意后缀已变为 .tar.zst
+  SDK_URL: https://downloads.openwrt.org/releases/24.10.5/targets/x86/64/openwrt-sdk-24.10.5-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst
   PackageName: luci-app-pushbot
   PackageSource_URL: https://github.com/beyondwen/luci-app-pushbot
   UPLOAD_Package: true
@@ -40,6 +39,7 @@ env:
 
 jobs:
   build:
+    # 24.10 的 SDK 完美兼容最新的环境，保持 ubuntu-latest 即可
     runs-on: ubuntu-latest
 
     steps:
@@ -52,8 +52,8 @@ jobs:
       run: |
         sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
         sudo -E apt-get -qq update
-        # 修复废弃的 git.io 链接，替换为原始的 Github RAW 链接
-        sudo -E apt-get -qq install $(curl -fsSL https://github.com/P3TERX/Actions-OpenWrt/raw/main/depends-ubuntu-2004)
+        # 增加 zstd 依赖以支持解压 .tar.zst 格式的最新 SDK
+        sudo -E apt-get -qq install zstd $(curl -fsSL https://github.com/P3TERX/Actions-OpenWrt/raw/main/depends-ubuntu-2004)
         sudo -E apt-get -qq autoremove --purge
         sudo -E apt-get -qq clean
         sudo timedatectl set-timezone "$TZ"
@@ -66,6 +66,7 @@ jobs:
         df -hT $PWD
         wget $SDK_URL
         mkdir /workdir/openwrt
+        # tar xf 命令会自动识别 zst 格式，前提是系统已安装 zstd
         tar xf openwrt-sdk-* -C /workdir/openwrt --strip-components 1
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
 
@@ -102,7 +103,6 @@ jobs:
         cd openwrt
         echo -e "$(nproc) thread compile"
         make package/$PackageName/compile V=s
-        # 修复：替换废弃的 set-output 语法
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Check space usage
@@ -115,14 +115,12 @@ jobs:
       run: |
         cd openwrt/bin/packages/*/base
         echo "PackagePath=$PWD" >> $GITHUB_ENV
-        # 修复：替换废弃的 set-output 语法
         echo "status=success" >> $GITHUB_OUTPUT
 
     - name: Upload package
       uses: actions/upload-artifact@v4
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        # 修复：v4 版本的 artifact name 不允许包含 * 等特殊符号，改为直接使用 PackageName
         name: ${{ env.PackageName }}
         path: ${{ env.PackagePath }}
 
@@ -130,22 +128,18 @@ jobs:
       id: cowtransfer
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_COWTRANSFER == 'true' && !cancelled()
       run: |
-        # 修复：替换废弃的 git.io 链接
         curl -fsSL https://raw.githubusercontent.com/Mikubill/transfer/master/install.sh | sh
         ./transfer cow --block 2621440 -s -p 64 --no-progress ${PackagePath}/${upload_file} 2>&1 | tee cowtransfer.log
         echo "::warning file=cowtransfer.com::$(cat cowtransfer.log | grep https)"
-        # 修复：替换废弃的 set-output 语法
         echo "url=$(cat cowtransfer.log | grep https | cut -f3 -d' ')" >> $GITHUB_OUTPUT
 
     - name: Upload firmware to WeTransfer
       id: wetransfer
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_WETRANSFER == 'true' && !cancelled()
       run: |
-        # 修复：替换废弃的 git.io 链接
         curl -fsSL https://raw.githubusercontent.com/Mikubill/transfer/master/install.sh | sh
         ./transfer wet -s -p 16 --no-progress ${PackagePath}/${upload_file} 2>&1 | tee wetransfer.log
         echo "::warning file=wetransfer.com::$(cat wetransfer.log | grep https)"
-        # 修复：替换废弃的 set-output 语法
         echo "url=$(cat wetransfer.log | grep https | cut -f3 -d' ')" >> $GITHUB_OUTPUT
         
     - name: Upload firmware to my NAS
@@ -162,7 +156,6 @@ jobs:
         
         cd openwrt/bin/packages/*/base
         echo $ftp_psw > /tmp/rsync.psw && chmod 600 /tmp/rsync.psw
-        # 修复：致命错误 - 将不存在的 $upload_file_1 修改为 $upload_file
         rsync -avrzP $upload_file $ftp_username@$ftp_ip::$TargetPath/$(date +"%Y.%m.%d-%H%M")/ --password-file=/tmp/rsync.psw
         echo "::warning file=zz-nas.com::All Released Files Uploaded to ZZ-NAS"
         
@@ -173,7 +166,6 @@ jobs:
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        # 修复：替换废弃的 set-output 语法
         echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
         touch release.txt
         [ $UPLOAD_COWTRANSFER = true ] && echo "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
@@ -191,7 +183,6 @@ jobs:
         files: ${{ env.PackagePath }}/${{ env.upload_file }}
 
     - name: Delete workflow runs
-      # 修复：替换为现代版并且持续维护的删除工具
       uses: Mattraks/delete-workflow-runs@v2
       with:
         token: ${{ github.token }}
