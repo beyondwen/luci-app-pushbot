@@ -54,6 +54,11 @@ a=s:taboption("basic", Value,"dd_webhook",translate('Webhook'), translate("钉�
 a.rmempty = true
 a:depends("jsonpath","/usr/bin/pushbot/api/dingding.json")
 
+a=s:taboption("basic", Value,"dd_secret",translate('加签 Secret'), translate("钉钉机器人加签密钥（secret）").."<br>开启钉钉机器人加签后填写，留空则按旧方式发送<br><br>")
+a.rmempty = true
+a.password = true
+a:depends("jsonpath","/usr/bin/pushbot/api/dingding.json")
+
 a=s:taboption("basic", Value, "we_webhook", translate("Webhook"),translate("企业微信机器人 Webhook").."，只输入key=后面的即可<br>调用代码获取<a href='https://work.weixin.qq.com/api/doc/90000/90136/91770' target='_blank'>点击这里</a><br><br>")
 a.rmempty = true
 a:depends("jsonpath","/usr/bin/pushbot/api/ent_wechat.json")

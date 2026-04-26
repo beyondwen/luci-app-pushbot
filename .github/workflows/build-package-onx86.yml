@@ -8,7 +8,7 @@
 # Description: Build OpenWrt using GitHub Actions
 #
 
-name: Build luci-app-pushbot-x86
+name: Build luci-app-pushbot-rockchip-armv8
 
 on:
   repository_dispatch:
@@ -21,7 +21,7 @@ on:
 
 env:
   # 更换为最新的 OpenWrt 24.10.5 的 SDK，注意后缀已变为 .tar.zst
-  SDK_URL: https://downloads.openwrt.org/releases/24.10.5/targets/x86/64/openwrt-sdk-24.10.5-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst
+  SDK_URL: https://downloads.openwrt.org/releases/24.10.5/targets/rockchip/armv8/openwrt-sdk-24.10.5-rockchip-armv8_gcc-13.3.0_musl.Linux-x86_64.tar.zst
   PackageName: luci-app-pushbot
   PackageSource_URL: https://github.com/beyondwen/luci-app-pushbot
   UPLOAD_Package: true
